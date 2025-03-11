@@ -1,7 +1,7 @@
 # ActuatorAI: Natural Language Interface for Actions
 
 <div align="center">
-     <img src="https://raw.githubusercontent.com/umairhaider/ActuatorAI/main/actuator-ai-logo.png" alt="ActuatorAI Logo" width="300">
+     <img src="https://raw.githubusercontent.com/umairhaider/ActuatorAI/main/actuator-ai.png" alt="ActuatorAI Logo" width="300">
   <p><em>Talk to your Python Actions.</em></p>
 </div>
 
