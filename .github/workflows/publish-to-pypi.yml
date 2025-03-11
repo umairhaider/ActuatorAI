@@ -1,0 +1,80 @@
+name: Publish ActuatorAI to PyPI
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    tags:
+      - 'v*'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-and-publish:
+    name: Build and publish ActuatorAI to PyPI
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for proper versioning
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine wheel setuptools
+        pip install -r requirements-dev.txt
+    
+    - name: Extract version from branch name
+      if: startsWith(github.ref, 'refs/heads/release/')
+      id: extract_version
+      run: |
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        VERSION=${BRANCH_NAME#release/}
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "Extracted version: $VERSION"
+    
+    - name: Update version in setup.py
+      if: startsWith(github.ref, 'refs/heads/release/')
+      run: |
+        # Update version in setup.py
+        sed -i "s/version=\".*\"/version=\"$VERSION\"/" setup.py
+        cat setup.py | grep version=
+    
+    - name: Build package
+      run: |
+        python -m build
+    
+    - name: Run tests
+      run: |
+        ./run_tests.sh
+    
+    - name: Check distribution
+      run: |
+        python -m twine check dist/*
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/heads/release/')
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release v${{ env.VERSION }}
+        tag_name: v${{ env.VERSION }}
+        generate_release_notes: true
+        files: |
+          dist/*.tar.gz
+          dist/*.whl
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Publish to PyPI
+      if: success()
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip_existing: true
+        verbose: true 
