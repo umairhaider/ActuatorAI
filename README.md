@@ -1,7 +1,8 @@
-# ActuatorAI: Natural Language Interface for Actions
+# ActuatorAI
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/umairhaider/ActuatorAI/main/actuator-ai.png" alt="ActuatorAI Logo" width="300">
+  <h3>Natural Language Interface for Actions</h3>
   <p><em>Talk to your Python Actions.</em></p>
   
   [![PyPI version](https://badge.fury.io/py/actuator-ai.svg)](https://badge.fury.io/py/actuator-ai)
@@ -14,9 +15,46 @@
   [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.11-009688.svg)](https://fastapi.tiangolo.com/)
 </div>
 
+<p align="center">
+  <a href="#-overview">Overview</a> •
+  <a href="#-features">Features</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-creating-actions">Creating Actions</a> •
+  <a href="#-api-reference">API Reference</a> •
+  <a href="#-examples">Examples</a>
+</p>
+
+<div align="center">
+  <br>
+  <pre align="center">
+  <code>pip install actuator-ai</code>
+  </pre>
+</div>
+
 ## 📖 Overview
 
-ActuatorAI is a conversational AI framework powered by LLMs for building natural language interfaces to your Python functions. It allows you to create conversational interfaces that can execute actions based on natural language input.
+ActuatorAI is a conversational AI framework powered by LLMs for building natural language interfaces to your Python functions. It enables you to:
+
+- 🗣️ **Create conversational interfaces** that understand natural language
+- 🔄 **Execute Python functions** based on user requests
+- 🤖 **Leverage LLMs** for understanding and formatting
+- 🔌 **Integrate easily** with existing Python code
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <b>User:</b> <i>"What's the weather in San Francisco?"</i>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <b>ActuatorAI:</b> <i>"It's currently 72°F and sunny in San Francisco."</i>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## ✨ Features
 
@@ -220,4 +258,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
