@@ -1,37 +1,39 @@
 # ActuatorAI: Natural Language Interface for Actions
 
 <div align="center">
-     <img src="https://raw.githubusercontent.com/umairhaider/ActuatorAI/main/actuator-ai.png" alt="ActuatorAI Logo" width="300">
+  <img src="https://raw.githubusercontent.com/umairhaider/ActuatorAI/main/actuator-ai.png" alt="ActuatorAI Logo" width="300">
   <p><em>Talk to your Python Actions.</em></p>
+  
+  [![PyPI version](https://badge.fury.io/py/actuator-ai.svg)](https://badge.fury.io/py/actuator-ai)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+  [![Run Tests](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml)
+  [![Pull Request Checks](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml)
+  [![Maintainability](https://img.shields.io/badge/maintainability-A-brightgreen)](https://github.com/umairhaider/ActuatorAI)
+  [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-brightgreen)](https://openai.com/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.11-009688.svg)](https://fastapi.tiangolo.com/)
 </div>
 
-[![PyPI version](https://badge.fury.io/py/actuator-ai.svg)](https://badge.fury.io/py/actuator-ai)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Run Tests](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml)
-[![Pull Request Checks](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml)
-[![Maintainability](https://img.shields.io/badge/maintainability-A-brightgreen)](https://github.com/umairhaider/ActuatorAI)
-[![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-brightgreen)](https://openai.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.11-009688.svg)](https://fastapi.tiangolo.com/)
+## 📖 Overview
 
-ActuatorAI is a conversational AI framework powerd by LLMs for building natural language interfaces to your Python functions. It allows you to create conversational interfaces that can execute actions based on natural language input.
+ActuatorAI is a conversational AI framework powered by LLMs for building natural language interfaces to your Python functions. It allows you to create conversational interfaces that can execute actions based on natural language input.
 
-## Features
+## ✨ Features
 
-- **Simple Action Definition**: Decorate your functions with `@action` to make them callable via natural language
-- **Automatic Discovery**: Actions are automatically discovered and registered
-- **Flexible API**: Rasa-compatible API for processing natural language messages
-- **Customizable Formatters**: Format action results in a user-friendly way
-- **LLM-Based Formatting**: Automatic natural language formatting when no custom formatter is provided
-- **Easy Integration**: Works with any Python function or method
+- **🔸 Simple Action Definition** - Decorate your functions with `@action` to make them callable via natural language
+- **🔸 Automatic Discovery** - Actions are automatically discovered and registered
+- **🔸 Flexible API** - Rasa-compatible API for processing natural language messages
+- **🔸 Customizable Formatters** - Format action results in a user-friendly way
+- **🔸 LLM-Based Formatting** - Automatic natural language formatting when no custom formatter is provided
+- **🔸 Easy Integration** - Works with any Python function or method
 
-## Installation
+## 🚀 Installation
 
 ```bash
 pip install actuator-ai
 ```
 
-## Quick Start
+## 🏁 Quick Start
 
 ### 1. Initialize a New Project
 
@@ -74,7 +76,7 @@ curl -X POST http://localhost:5005/webhooks/rest/webhook \
   -d '{"sender": "user", "message": "Calculate 15 * 7 + 3"}'
 ```
 
-## Creating Actions
+## 🛠️ Creating Actions
 
 Actions are Python functions decorated with `@action`. Here's an example:
 
@@ -102,7 +104,7 @@ def get_random_number(min_value=0, max_value=100):
     }
 ```
 
-## Formatting Results
+## 💬 Formatting Results
 
 You have two options for formatting action results:
 
@@ -142,7 +144,7 @@ I've generated a random number for you: 42. This number is between 0 and 100.
 
 The LLM uses the action name, description, and result data to create a natural response.
 
-## API Reference
+## 📚 API Reference
 
 ### Decorators
 
@@ -159,20 +161,24 @@ Decorator to mark a function as an action that can be discovered by the action r
 
 Registry for discovering and managing actions.
 
-- `discover_actions(module_or_class)`: Discover actions in a module or class
-- `register_action(func)`: Register an action
-- `register_formatter(action_name, formatter)`: Register a formatter for an action
-- `get_action(action_name)`: Get an action by name
-- `get_all_actions()`: Get all registered actions
+| Method | Description |
+|--------|-------------|
+| `discover_actions(module_or_class)` | Discover actions in a module or class |
+| `register_action(func)` | Register an action |
+| `register_formatter(action_name, formatter)` | Register a formatter for an action |
+| `get_action(action_name)` | Get an action by name |
+| `get_all_actions()` | Get all registered actions |
 
 #### `LLMAdapter`
 
 Adapter for processing natural language messages using LLMs.
 
-- `discover_actions(module_or_class)`: Discover actions in a module or class
-- `register_pattern_processor(processor)`: Register a pattern processor
-- `register_formatters(formatters)`: Register formatters for actions
-- `chat(message)`: Process a natural language message
+| Method | Description |
+|--------|-------------|
+| `discover_actions(module_or_class)` | Discover actions in a module or class |
+| `register_pattern_processor(processor)` | Register a pattern processor |
+| `register_formatters(formatters)` | Register formatters for actions |
+| `chat(message)` | Process a natural language message |
 
 ### Functions
 
@@ -184,7 +190,7 @@ Create a FastAPI application for the ActuatorAI framework.
 
 Run the FastAPI application.
 
-## CLI Reference
+## 💻 CLI Reference
 
 ### `actuator-ai init <project_name>`
 
@@ -194,23 +200,24 @@ Initialize a new ActuatorAI project.
 
 Start the API server.
 
-Options:
-- `--host`: Host to run the server on (default: 0.0.0.0)
-- `--port`: Port to run the server on (default: 5005)
-- `--actions`: Module containing actions to discover
-- `--openai-api-key`: OpenAI API key
-- `--no-reload`: Disable auto-reload
+| Option | Description |
+|--------|-------------|
+| `--host` | Host to run the server on (default: 0.0.0.0) |
+| `--port` | Port to run the server on (default: 5005) |
+| `--actions` | Module containing actions to discover |
+| `--openai-api-key` | OpenAI API key |
+| `--no-reload` | Disable auto-reload |
 
-## Examples
+## 📋 Examples
 
 Check out the examples directory for more examples:
 
 - [Weather Bot](actuator_ai/examples/weather_bot): A simple weather bot that can tell you the weather, time, and perform calculations
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
