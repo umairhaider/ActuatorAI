@@ -5,7 +5,7 @@ with open("PyPI.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="actuator-ai",
-    version="0.1.0",
+    version="0.1.1",
     author="Umair Haider",
     author_email="info@umairhaider.com",
     description="A framework for building natural language interfaces to actions",
