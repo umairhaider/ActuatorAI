@@ -213,60 +213,6 @@ Check out the examples directory for more examples:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Testing
-
-ActuatorAI includes a comprehensive test suite. To run the tests:
-
-```bash
-./run_tests.sh
-```
-
-This will run unit tests, integration tests, and generate a coverage report.
-
-## Releasing
-
-ActuatorAI uses GitHub Actions to automate the release process. To release a new version:
-
-1. Create a new branch with the format `release/x.y.z` (e.g., `release/0.2.0`)
-   ```bash
-   git checkout -b release/0.2.0
-   ```
-
-2. Push the branch to GitHub
-   ```bash
-   git push -u origin release/0.2.0
-   ```
-
-3. The GitHub Actions workflow will automatically:
-   - Extract the version from the branch name
-   - Update the version in setup.py
-   - Build the package
-   - Run tests
-   - Create a GitHub Release with the tag v0.2.0
-   - Publish the package to PyPI
-
-4. You can also manually trigger the workflow from the GitHub Actions tab.
-
-**Note**: You need to set up a PyPI API token as a GitHub secret named `PYPI_API_TOKEN` for the publishing step to work.
-
-## Branch Protection
-
-To ensure code quality and prevent merges when tests fail, you should set up branch protection rules in GitHub:
-
-1. Go to your GitHub repository
-2. Navigate to Settings > Branches
-3. Click "Add rule" under "Branch protection rules"
-4. In "Branch name pattern", enter `main` (or `master` if that's your default branch)
-5. Enable the following options:
-   - ✅ Require a pull request before merging
-   - ✅ Require status checks to pass before merging
-   - ✅ Require branches to be up to date before merging
-6. In the "Status checks that are required" section, search for and select:
-   - "Validate PR"
-7. Click "Create" or "Save changes"
-
-With these settings, pull requests to the main branch will require the tests to pass before merging is allowed.
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
