@@ -131,10 +131,13 @@ class LLMAdapter:
             
             action_descriptions.append(f"Action: {action_name}\nDescription: {description}\nParameters:\n" + "\n".join(param_descriptions))
         
+        # Join action descriptions with double newlines
+        joined_descriptions = "\n\n".join(action_descriptions)
+        
         prompt = f"""
 You are an AI assistant that can help with various tasks. You have access to the following actions:
 
-{"\n\n".join(action_descriptions)}
+{joined_descriptions}
 
 User message: {message}
 
