@@ -1,16 +1,107 @@
 name: Publish ActuatorAI to PyPI
 
 on:
+  # Triggered by successful test workflow
+  workflow_run:
+    workflows: ["Run Tests"]
+    types:
+      - completed
+    branches:
+      - main
+  
+  # Keep existing triggers
   push:
     branches:
       - 'release/**'
     tags:
       - 'v*'
-  workflow_dispatch:  # Allow manual triggering
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.1)'
+        required: true
+        default: ''
 
 jobs:
+  # Only proceed if tests passed or workflow was manually triggered
+  check-tests:
+    name: Check if tests passed
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - name: Check if release is needed
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            # Check if there have been commits since last release
+            # This is a placeholder - you might want to implement a more sophisticated check
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-increment patch version
+            # For a real implementation, you'd need to check the latest tag and increment
+            echo "version=0.1.1" >> $GITHUB_OUTPUT
+          fi
+
+  create-release-branch:
+    name: Create release branch
+    needs: check-tests
+    if: needs.check-tests.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+      
+      - name: Create and push release branch
+        run: |
+          VERSION="${{ needs.check-tests.outputs.version }}"
+          BRANCH="release/$VERSION"
+          
+          # Create branch
+          git checkout -b $BRANCH
+          
+          # Update version in setup.py
+          sed -i "s/version=\".*\"/version=\"$VERSION\"/" setup.py
+          
+          # Commit and push
+          git add setup.py
+          git commit -m "Bump version to $VERSION"
+          git push origin $BRANCH
+          
+          echo "Created and pushed branch $BRANCH"
+
   build-and-publish:
     name: Build and publish ActuatorAI to PyPI
+    needs: [check-tests, create-release-branch]
+    if: |
+      needs.check-tests.outputs.should_release == 'true' || 
+      startsWith(github.ref, 'refs/heads/release/') || 
+      startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     
     steps:
@@ -18,6 +109,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0  # Fetch all history for proper versioning
+        ref: ${{ startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v') && github.ref || format('refs/heads/release/{0}', needs.check-tests.outputs.version) }}
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -30,21 +122,19 @@ jobs:
         pip install build twine wheel setuptools
         pip install -r requirements-dev.txt
     
-    - name: Extract version from branch name
-      if: startsWith(github.ref, 'refs/heads/release/')
+    - name: Extract version
       id: extract_version
       run: |
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        VERSION=${BRANCH_NAME#release/}
+        if [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          VERSION=${BRANCH_NAME#release/}
+        elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION="${{ needs.check-tests.outputs.version }}"
+        fi
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Extracted version: $VERSION"
-    
-    - name: Update version in setup.py
-      if: startsWith(github.ref, 'refs/heads/release/')
-      run: |
-        # Update version in setup.py
-        sed -i "s/version=\".*\"/version=\"$VERSION\"/" setup.py
-        cat setup.py | grep version=
     
     - name: Build package
       run: |
@@ -58,8 +148,8 @@ jobs:
       run: |
         python -m twine check dist/*
     
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/heads/release/')
+    - name: Create GitHub Release and Tag
+      if: success()
       uses: softprops/action-gh-release@v1
       with:
         name: Release v${{ env.VERSION }}

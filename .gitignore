@@ -54,6 +54,3 @@ temp/
 # Documentation builds
 docs/_build/
 site/
-
-# Specific to ActuatorAI
-update_imports.py
