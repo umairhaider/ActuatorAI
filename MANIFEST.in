@@ -1,0 +1,5 @@
+include LICENSE
+include README.md
+include actuator-ai.png
+recursive-include actuator_ai *.py
+recursive-include actuator_ai/examples *.py *.md 
