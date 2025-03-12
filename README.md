@@ -10,9 +10,7 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Run Tests](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/test.yml)
 [![Pull Request Checks](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/umairhaider/ActuatorAI/actions/workflows/pr-checks.yml)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Maintainability](https://img.shields.io/badge/maintainability-A-brightgreen)](https://github.com/umairhaider/ActuatorAI)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/umairhaider/ActuatorAI/blob/main/CONTRIBUTING.md)
 [![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-brightgreen)](https://openai.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.11-009688.svg)](https://fastapi.tiangolo.com/)
 

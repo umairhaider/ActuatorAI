@@ -1,22 +1,14 @@
 name: Publish ActuatorAI to PyPI
 
 on:
-  # Triggered by successful test workflow
-  workflow_run:
-    workflows: ["Run Tests"]
-    types:
-      - completed
-    branches:
-      - main
-  
-  # Keep existing triggers
+  # Only trigger on release branches and tags
   push:
     branches:
       - 'release/**'
     tags:
       - 'v*'
   
-  # Allow manual triggering
+  # Allow manual triggering with version input
   workflow_dispatch:
     inputs:
       version:
@@ -31,44 +23,34 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Only proceed if tests passed or workflow was manually triggered
-  check-tests:
-    name: Check if tests passed
+  # Prepare release information
+  prepare-release:
+    name: Prepare release information
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     outputs:
-      should_release: ${{ steps.check.outputs.should_release }}
       version: ${{ steps.version.outputs.version }}
     
     steps:
-      - name: Check if release is needed
-        id: check
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          else
-            # Check if there have been commits since last release
-            # This is a placeholder - you might want to implement a more sophisticated check
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          fi
-      
       - name: Determine version
         id: version
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            # Auto-increment patch version
-            # For a real implementation, you'd need to check the latest tag and increment
-            echo "version=0.1.1" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            VERSION=${BRANCH_NAME#release/}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
           fi
+          echo "Determined version: $(cat $GITHUB_OUTPUT | grep version | cut -d= -f2)"
 
+  # Only run this job for manual triggers
   create-release-branch:
     name: Create release branch
-    needs: check-tests
-    if: needs.check-tests.outputs.should_release == 'true'
+    needs: prepare-release
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     
     steps:
@@ -85,7 +67,7 @@ jobs:
       
       - name: Create and push release branch
         run: |
-          VERSION="${{ needs.check-tests.outputs.version }}"
+          VERSION="${{ needs.prepare-release.outputs.version }}"
           BRANCH="release/$VERSION"
           
           # Create branch
@@ -101,13 +83,14 @@ jobs:
           
           echo "Created and pushed branch $BRANCH"
 
+  # Build and publish - runs in different scenarios
   build-and-publish:
     name: Build and publish ActuatorAI to PyPI
-    needs: [check-tests, create-release-branch]
+    needs: [prepare-release, create-release-branch]
+    # Skip this job if create-release-branch failed, but only when manually triggered
     if: |
-      needs.check-tests.outputs.should_release == 'true' || 
-      startsWith(github.ref, 'refs/heads/release/') || 
-      startsWith(github.ref, 'refs/tags/v')
+      always() && 
+      (github.event_name != 'workflow_dispatch' || needs.create-release-branch.result == 'success')
     runs-on: ubuntu-latest
     
     steps:
@@ -115,7 +98,9 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0  # Fetch all history for proper versioning
-        ref: ${{ startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v') && github.ref || format('refs/heads/release/{0}', needs.check-tests.outputs.version) }}
+        # For manual triggers, use the newly created branch
+        # For direct pushes to release branches or tags, use the current ref
+        ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/heads/release/{0}', needs.prepare-release.outputs.version) || github.ref }}
         token: ${{ secrets.PAT }}
     
     - name: Set up Python
@@ -138,7 +123,7 @@ jobs:
         elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
           VERSION=${GITHUB_REF#refs/tags/v}
         else
-          VERSION="${{ needs.check-tests.outputs.version }}"
+          VERSION="${{ needs.prepare-release.outputs.version }}"
         fi
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Extracted version: $VERSION"
