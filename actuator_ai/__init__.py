@@ -4,6 +4,8 @@ ActuatorAI: A framework for building natural language interfaces to actions.
 This package provides a flexible way to create natural language interfaces
 for your Python functions. Simply decorate your functions with @action and
 they will be automatically discoverable and callable via natural language.
+
+The framework supports multiple interfaces including REST API and Telegram bots.
 """
 
 __version__ = "0.1.0"

@@ -2,7 +2,7 @@
 API components of the ActuatorAI framework.
 
 This package contains the API components of the ActuatorAI framework,
-including the FastAPI application and endpoints.
+including the FastAPI application and endpoints for REST and Telegram webhooks.
 """
 
 from actuator_ai.api.app import create_app, run_app

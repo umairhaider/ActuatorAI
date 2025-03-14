@@ -31,6 +31,7 @@ setup(
         "langchain-community==0.3.19",
         "openai==1.65.5",
         "python-dotenv==1.0.1",
+        "httpx==0.27.0"
     ],
     extras_require={
         "dev": [

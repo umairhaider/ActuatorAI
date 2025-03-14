@@ -7,11 +7,13 @@ including endpoints for processing natural language messages.
 
 import os
 import uuid
+import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from pydantic import BaseModel, Field
+import httpx
 
 from actuator_ai.core.llm_adapter import LLMAdapter
 
@@ -58,13 +60,49 @@ class Message(BaseModel):
     message_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     parse_data: Optional[ParseData] = None
 
+# Telegram-specific models
+class TelegramUser(BaseModel):
+    """Model for a Telegram user."""
+    id: int
+    is_bot: bool = False
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    language_code: Optional[str] = None
+
+class TelegramChat(BaseModel):
+    """Model for a Telegram chat."""
+    id: int
+    type: str
+    title: Optional[str] = None
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+class TelegramMessage(BaseModel):
+    """Model for a Telegram message."""
+    message_id: int
+    from_user: Optional[TelegramUser] = Field(None, alias="from")
+    chat: TelegramChat
+    date: int
+    text: Optional[str] = None
+
+class TelegramUpdate(BaseModel):
+    """Model for a Telegram update."""
+    update_id: int
+    message: Optional[TelegramMessage] = None
+    edited_message: Optional[TelegramMessage] = None
+    channel_post: Optional[TelegramMessage] = None
+    edited_channel_post: Optional[TelegramMessage] = None
+
 def create_app(
     actions_module=None,
     openai_api_key=None,
     title="ActuatorAI API",
     description="API for processing natural language messages",
     version="0.1.0",
-    setup_llm_adapter=None
+    setup_llm_adapter=None,
+    telegram_token=None
 ) -> FastAPI:
     """
     Create a FastAPI application for the ActuatorAI framework.
@@ -76,6 +114,7 @@ def create_app(
         description: API description
         version: API version
         setup_llm_adapter: Function to set up the LLM adapter
+        telegram_token: Telegram bot token
         
     Returns:
         FastAPI application
@@ -113,6 +152,11 @@ def create_app(
         
         return adapter
     
+    # Get the Telegram token
+    def get_telegram_token():
+        """Get the Telegram bot token."""
+        return telegram_token or os.getenv("TELEGRAM_BOT_TOKEN")
+    
     # Define API endpoints
     @app.get("/")
     async def root() -> Dict[str, str]:
@@ -133,6 +177,7 @@ def create_app(
                 "/",
                 "/status",
                 "/webhooks/rest/webhook",
+                "/webhooks/telegram/webhook",
                 "/model/parse"
             ]
         }
@@ -177,6 +222,79 @@ def create_app(
                 )
             ]
     
+    async def send_telegram_message(chat_id: int, text: str, token: str):
+        """
+        Send a message to a Telegram chat.
+        
+        Args:
+            chat_id: Telegram chat ID
+            text: Message text
+            token: Telegram bot token
+        """
+        async with httpx.AsyncClient() as client:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "Markdown"
+            }
+            await client.post(url, json=payload)
+    
+    @app.post("/webhooks/telegram/webhook")
+    async def telegram_webhook(
+        update: TelegramUpdate,
+        background_tasks: BackgroundTasks,
+        llm_adapter: LLMAdapter = Depends(get_llm_adapter),
+        token: str = Depends(get_telegram_token)
+    ):
+        """
+        Process a Telegram update using the LLM adapter.
+        
+        Args:
+            update: Telegram update
+            background_tasks: Background tasks
+            llm_adapter: LLM adapter
+            token: Telegram bot token
+            
+        Returns:
+            Empty response (Telegram expects a 200 OK response)
+        """
+        if not token:
+            raise HTTPException(status_code=500, detail="Telegram bot token not configured")
+        
+        # Extract the message from the update
+        message = update.message or update.edited_message or update.channel_post or update.edited_channel_post
+        
+        if not message or not message.text:
+            return {}  # Ignore updates without text
+        
+        try:
+            # Process the message using the LLM adapter
+            response = llm_adapter.chat(message.text)
+            
+            # Send the response in the background
+            background_tasks.add_task(
+                send_telegram_message,
+                chat_id=message.chat.id,
+                text=response,
+                token=token
+            )
+            
+            return {}  # Return an empty response (Telegram expects a 200 OK)
+        except Exception as e:
+            # If there's an unexpected error, provide a helpful error message
+            error_message = f"I'm sorry, I encountered an unexpected error: {str(e)}"
+            
+            # Send the error message in the background
+            background_tasks.add_task(
+                send_telegram_message,
+                chat_id=message.chat.id,
+                text=error_message,
+                token=token
+            )
+            
+            return {}  # Return an empty response (Telegram expects a 200 OK)
+    
     @app.post("/model/parse", response_model=ParseData)
     async def parse(
         message: Message,
@@ -214,6 +332,30 @@ def create_app(
                 message_id=message.message_id
             )
     
+    @app.post("/telegram/set-webhook")
+    async def set_telegram_webhook(
+        webhook_url: str,
+        token: str = Depends(get_telegram_token)
+    ):
+        """
+        Set the Telegram webhook URL.
+        
+        Args:
+            webhook_url: Webhook URL
+            token: Telegram bot token
+            
+        Returns:
+            Response from the Telegram API
+        """
+        if not token:
+            raise HTTPException(status_code=500, detail="Telegram bot token not configured")
+        
+        async with httpx.AsyncClient() as client:
+            url = f"https://api.telegram.org/bot{token}/setWebhook"
+            params = {"url": webhook_url}
+            response = await client.post(url, params=params)
+            return response.json()
+    
     return app
 
 def run_app(
@@ -223,6 +365,7 @@ def run_app(
     port=5005,
     reload=True,
     setup_llm_adapter=None,
+    telegram_token=None,
     **kwargs
 ):
     """
@@ -235,6 +378,7 @@ def run_app(
         port: Port to run the application on
         reload: Whether to reload the application on code changes
         setup_llm_adapter: Function to set up the LLM adapter
+        telegram_token: Telegram bot token
         **kwargs: Additional arguments to pass to create_app
     """
     import uvicorn
@@ -244,6 +388,7 @@ def run_app(
         actions_module=actions_module,
         openai_api_key=openai_api_key,
         setup_llm_adapter=setup_llm_adapter,
+        telegram_token=telegram_token,
         **kwargs
     )
     

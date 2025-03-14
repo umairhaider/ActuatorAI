@@ -22,6 +22,7 @@ def main():
     server_parser.add_argument("--port", type=int, default=5005, help="Port to run the server on")
     server_parser.add_argument("--actions", help="Module containing actions to discover")
     server_parser.add_argument("--openai-api-key", help="OpenAI API key")
+    server_parser.add_argument("--telegram-token", help="Telegram bot token")
     server_parser.add_argument("--no-reload", action="store_true", help="Disable auto-reload")
     
     # Run command (alias for server, but with a simpler name)
@@ -30,6 +31,7 @@ def main():
     run_parser.add_argument("--port", type=int, default=5005, help="Port to run the server on")
     run_parser.add_argument("--actions", help="Module containing actions to discover")
     run_parser.add_argument("--openai-api-key", help="OpenAI API key")
+    run_parser.add_argument("--telegram-token", help="Telegram bot token")
     run_parser.add_argument("--no-reload", action="store_true", help="Disable auto-reload")
     
     # Init command
@@ -46,6 +48,7 @@ def main():
             port=args.port,
             actions_module=args.actions,
             openai_api_key=args.openai_api_key,
+            telegram_token=args.telegram_token,
             reload=not args.no_reload
         )
     elif args.command == "init":
@@ -63,6 +66,7 @@ def run_server(
     port: int = 5005,
     actions_module: Optional[str] = None,
     openai_api_key: Optional[str] = None,
+    telegram_token: Optional[str] = None,
     reload: bool = True
 ):
     """
@@ -73,6 +77,7 @@ def run_server(
         port: Port to run the server on
         actions_module: Module containing actions to discover
         openai_api_key: OpenAI API key
+        telegram_token: Telegram bot token
         reload: Whether to reload the server on code changes
     """
     from actuator_ai.api.app import run_app
@@ -107,6 +112,7 @@ def run_server(
     run_app(
         actions_module=actions_module_obj,
         openai_api_key=openai_api_key,
+        telegram_token=telegram_token,
         host=host,
         port=port,
         reload=reload,
@@ -262,31 +268,32 @@ ACTION_FORMATTERS = {
     with open(project_dir / "main.py", "w") as f:
         f.write("""\"\"\"
 Main entry point for the ActuatorAI project.
-
-This module provides a main entry point for the ActuatorAI project,
-allowing users to start the API server.
 \"\"\"
 
 import os
-from actuator_ai import run_app
 from dotenv import load_dotenv
 
-# Import actions and formatters
-import actions
-import formatters
-                
-# Load environment variables from a .env file
+# Load environment variables from .env file
 load_dotenv()
+
+# Import actions
+import actions
+
+from actuator_ai.api.app import run_app
 
 def main():
     \"\"\"Main entry point for the ActuatorAI project.\"\"\"
     # Get the OpenAI API key from environment variables
     openai_api_key = os.getenv("OPENAI_API_KEY")
     
+    # Get the Telegram bot token from environment variables (optional)
+    telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    
     # Run the application
     run_app(
         actions_module=actions,
         openai_api_key=openai_api_key,
+        telegram_token=telegram_token,
         title="My ActuatorAI API",
         description="API for processing natural language messages",
         version="0.1.0"
@@ -299,7 +306,10 @@ if __name__ == "__main__":
     # Create .env file
     with open(project_dir / ".env", "w") as f:
         f.write("""# OpenAI API key
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key
+
+# Telegram bot token (optional)
+# TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 """)
     
     # Create requirements.txt
@@ -331,7 +341,11 @@ A natural language interface for actions built with ActuatorAI.
    - Edit the `.env` file
    - Add your OpenAI API key to the `.env` file:
      ```
-     OPENAI_API_KEY=your_openai_api_key_here
+     OPENAI_API_KEY=your_openai_api_key
+     ```
+   - (Optional) Add your Telegram bot token to the `.env` file:
+     ```
+     TELEGRAM_BOT_TOKEN=your_telegram_bot_token
      ```
 
 ## Running the Application
@@ -348,81 +362,23 @@ actuator-ai server --actions actions
 
 ## Testing the API
 
-1. Check if the API is running:
-   ```
-   curl http://localhost:5005/
-   ```
-
-2. Process natural language requests using the webhook endpoint:
-   ```bash
-   # Time query
-   curl -X POST http://localhost:5005/webhooks/rest/webhook \\
-     -H "Content-Type: application/json" \\
-     -d '{{"sender": "user", "message": "What time is it?"}}'
-   
-   # Calculator
-   curl -X POST http://localhost:5005/webhooks/rest/webhook \\
-     -H "Content-Type: application/json" \\
-     -d '{{"sender": "user", "message": "Calculate 15 * 7 + 3"}}'
-   ```
-
-## Adding New Actions
-
-To add a new action to the system:
-
-1. Import the `action` decorator from `actuator_ai`
-2. Define a function and decorate it with `@action`
-3. The function will be automatically discovered and registered
-
-Example:
-```python
-from actuator_ai import action
-
-@action(description="Get a random number between two values")
-def get_random_number(min_value=0, max_value=100):
-    \"\"\"
-    Get a random number between two values.
-    
-    Args:
-        min_value (int, optional): Minimum value. Defaults to 0.
-        max_value (int, optional): Maximum value. Defaults to 100.
-        
-    Returns:
-        dict: A dictionary containing the random number and the range.
-    \"\"\"
-    import random
-    number = random.randint(min_value, max_value)
-    return {{
-        "number": number,
-        "min": min_value,
-        "max": max_value
-    }}
+### REST API
+```
+curl -X POST http://localhost:5005/webhooks/rest/webhook \\
+  -H "Content-Type: application/json" \\
+  -d '{{"sender": "user", "message": "What time is it?"}}'
 ```
 
-## Adding Formatters
+### Telegram Bot Integration
 
-To add a formatter for an action:
-
-1. Define a formatter function in `formatters.py`
-2. Add the formatter to the `ACTION_FORMATTERS` dictionary
-
-Example:
-```python
-def format_random_number_result(result):
-    \"\"\"
-    Format the result of the get_random_number action.
-    
-    Args:
-        result: Result from the get_random_number action
-        
-    Returns:
-        Formatted result as a string
-    \"\"\"
-    return f"Random number between {{result['min']}} and {{result['max']}}: {{result['number']}}"
-
-# Add the formatter to the ACTION_FORMATTERS dictionary
-ACTION_FORMATTERS["get_random_number"] = format_random_number_result
-```
+1. Create a Telegram bot using BotFather (https://t.me/botfather)
+2. Get your bot token and add it to the `.env` file
+3. Set the webhook URL for your bot:
+   ```
+   curl -X POST http://localhost:5005/telegram/set-webhook?webhook_url=https://your-public-url.com/webhooks/telegram/webhook
+   ```
+   Note: You need a public URL for Telegram to send updates to your bot. You can use ngrok for testing.
+4. Start chatting with your bot on Telegram!
 """)
     
     print(f"Initialized new ActuatorAI project in '{project_name}'")
