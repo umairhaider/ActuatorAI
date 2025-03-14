@@ -21,6 +21,7 @@
   <a href="#-installation">Installation</a> •
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-creating-actions">Creating Actions</a> •
+  <a href="#-telegram-integration">Telegram Integration</a> •
   <a href="#-api-reference">API Reference</a> •
   <a href="#-examples">Examples</a>
 </p>
@@ -64,6 +65,7 @@ ActuatorAI is a conversational AI framework powered by LLMs for building natural
 - **🔸 Customizable Formatters** - Format action results in a user-friendly way
 - **🔸 LLM-Based Formatting** - Automatic natural language formatting when no custom formatter is provided
 - **🔸 Easy Integration** - Works with any Python function or method
+- **🔸 Multiple Interfaces** - Support for REST API and Telegram bots
 
 ## 🚀 Installation
 
@@ -182,6 +184,96 @@ I've generated a random number for you: 42. This number is between 0 and 100.
 
 The LLM uses the action name, description, and result data to create a natural response.
 
+## 🤖 Telegram Integration
+
+ActuatorAI supports integration with Telegram bots, allowing users to interact with your actions through Telegram.
+
+### Prerequisites
+
+1. A Telegram bot token (create one using [BotFather](https://t.me/botfather))
+2. A publicly accessible URL for your ActuatorAI server (for webhook)
+
+### Setup
+
+#### 1. Configure Environment Variables
+
+Add your Telegram bot token to your `.env` file:
+
+```
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+```
+
+#### 2. Start Your ActuatorAI Server
+
+Start your ActuatorAI server with the Telegram token:
+
+```bash
+actuator-ai server --telegram-token your_telegram_bot_token
+```
+
+Or if you're using the Python API:
+
+```python
+from actuator_ai import run_app
+
+run_app(
+    actions_module=your_actions_module,
+    telegram_token=your_telegram_token
+)
+```
+
+#### 3. Set Up the Webhook
+
+For Telegram to send messages to your ActuatorAI server, you need to set up a webhook. Your server needs to be publicly accessible (you can use [ngrok](https://ngrok.com/) for testing).
+
+```bash
+curl -X POST "http://localhost:5005/telegram/set-webhook?webhook_url=https://your-public-url.com/webhooks/telegram/webhook"
+```
+
+Replace `https://your-public-url.com` with your actual public URL.
+
+### How It Works
+
+1. When a user sends a message to your Telegram bot, Telegram forwards it to your webhook URL.
+2. The ActuatorAI server processes the message using the same LLM adapter that handles REST webhook requests.
+3. The response is sent back to the user via the Telegram API.
+
+### Example
+
+Here's a complete example of setting up a Telegram bot with ActuatorAI:
+
+```python
+import os
+from dotenv import load_dotenv
+from actuator_ai import action, run_app
+
+# Load environment variables
+load_dotenv()
+
+# Define an action
+@action(description="Get the current time")
+def get_time():
+    from datetime import datetime
+    now = datetime.now()
+    return {
+        "time": now.strftime("%H:%M:%S"),
+        "date": now.strftime("%Y-%m-%d")
+    }
+
+# Run the application
+if __name__ == "__main__":
+    run_app(
+        telegram_token=os.getenv("TELEGRAM_BOT_TOKEN"),
+        openai_api_key=os.getenv("OPENAI_API_KEY")
+    )
+```
+
+### Troubleshooting
+
+1. **Webhook not working**: Make sure your server is publicly accessible and the URL is correct.
+2. **Bot not responding**: Check that your Telegram token is correct and the webhook is set up properly.
+3. **Error messages**: Check the server logs for detailed error messages.
+
 ## 📚 API Reference
 
 ### Decorators
@@ -220,11 +312,11 @@ Adapter for processing natural language messages using LLMs.
 
 ### Functions
 
-#### `create_app(actions_module=None, openai_api_key=None, ...)`
+#### `create_app(actions_module=None, openai_api_key=None, telegram_token=None, ...)`
 
 Create a FastAPI application for the ActuatorAI framework.
 
-#### `run_app(actions_module=None, openai_api_key=None, ...)`
+#### `run_app(actions_module=None, openai_api_key=None, telegram_token=None, ...)`
 
 Run the FastAPI application.
 
@@ -244,6 +336,7 @@ Start the API server.
 | `--port` | Port to run the server on (default: 5005) |
 | `--actions` | Module containing actions to discover |
 | `--openai-api-key` | OpenAI API key |
+| `--telegram-token` | Telegram bot token |
 | `--no-reload` | Disable auto-reload |
 
 ## 📋 Examples
